@@ -18,9 +18,10 @@ import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import VehicleCollection from './VehicleCollection';
+import AuthService from '../services/authService';
 
 // Replace with your backend URL (for Android emulator, use 10.0.2.2 instead of localhost)
-const BACKEND_URL = 'http://10.0.2.2:3000';
+const API_BASE_URL = 'http://10.0.2.2:3000';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -95,12 +96,27 @@ export default function MotorDexCamera() {
     loadCollectionCount();
   }, []);
 
+  const getUserCollectionKey = (): string => {
+    const currentUser = AuthService.getInstance().getCurrentUser();
+    if (!currentUser) {
+      // Fallback for non-authenticated users (shouldn't happen in normal flow)
+      return 'vehicleCollection_anonymous';
+    }
+    return `vehicleCollection_${currentUser.id}`;
+  };
+
+
+
   const loadCollectionCount = async () => {
     try {
-      const storedCollection = await AsyncStorage.getItem('vehicleCollection');
+      const collectionKey = getUserCollectionKey();
+      const storedCollection = await AsyncStorage.getItem(collectionKey);
       if (storedCollection) {
         const parsed = JSON.parse(storedCollection);
         setCollectionCount(parsed.length);
+      } else {
+        // New user starts with 0 count
+        setCollectionCount(0);
       }
     } catch (error) {
       console.error('Error loading collection count:', error);
@@ -109,8 +125,11 @@ export default function MotorDexCamera() {
 
   const saveToCollection = async (vehicle: VehicleData, imageUri: string) => {
     try {
+      // Get user-specific collection key
+      const collectionKey = getUserCollectionKey();
+      
       // Load existing collection
-      const storedCollection = await AsyncStorage.getItem('vehicleCollection');
+      const storedCollection = await AsyncStorage.getItem(collectionKey);
       let collection: CollectedVehicle[] = storedCollection ? JSON.parse(storedCollection) : [];
       
       // Check for duplicates (same make + model combination)
@@ -139,8 +158,8 @@ export default function MotorDexCamera() {
       // Add to collection
       collection.push(newVehicle);
       
-      // Save back to storage
-      await AsyncStorage.setItem('vehicleCollection', JSON.stringify(collection));
+      // Save back to storage with user-specific key
+      await AsyncStorage.setItem(collectionKey, JSON.stringify(collection));
       
       // Update collection count
       setCollectionCount(collection.length);
@@ -250,7 +269,7 @@ export default function MotorDexCamera() {
         name: 'image.jpg',
       } as any);
 
-      const response = await axios.post(`${BACKEND_URL}/upload`, formData, {
+      const response = await axios.post(`${API_BASE_URL}/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -357,13 +376,13 @@ export default function MotorDexCamera() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0D1117" />
       
-      {/* Hero Section */}
+      {/* Header Section */}
       <View style={styles.heroSection}>
         <View style={styles.heroContent}>
           <Text style={styles.brandTitle}>MOTORDEX</Text>
-          <Text style={styles.heroTitle}>Professional Vehicle Scanner</Text>
+          <Text style={styles.heroTitle}>Car Spotting Made Fun!</Text>
           <Text style={styles.heroSubtitle}>
-            Advanced AI-powered license plate recognition with instant vehicle identification
+            Discover and collect cool cars you see on the street. Build your personal car spotting collection!
           </Text>
         </View>
         
@@ -395,8 +414,8 @@ export default function MotorDexCamera() {
           >
             <View style={styles.actionButtonContent}>
               <Ionicons name="camera" size={24} color="#FFFFFF" />
-              <Text style={styles.actionButtonText}>SCAN WITH CAMERA</Text>
-              <Text style={styles.actionButtonSubtext}>Real-time scanning</Text>
+              <Text style={styles.actionButtonText}>SPOT A CAR</Text>
+              <Text style={styles.actionButtonSubtext}>Snap a license plate</Text>
             </View>
           </TouchableOpacity>
           
@@ -407,8 +426,8 @@ export default function MotorDexCamera() {
           >
             <View style={styles.actionButtonContent}>
               <Ionicons name="image" size={24} color="#3B82F6" />
-              <Text style={[styles.actionButtonText, { color: '#3B82F6' }]}>CHOOSE FROM GALLERY</Text>
-              <Text style={[styles.actionButtonSubtext, { color: '#6B7280' }]}>Select existing photo</Text>
+              <Text style={[styles.actionButtonText, { color: '#3B82F6' }]}>FROM GALLERY</Text>
+              <Text style={[styles.actionButtonSubtext, { color: '#6B7280' }]}>Upload saved photo</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -417,8 +436,8 @@ export default function MotorDexCamera() {
         {isLoading && (
           <View style={styles.loadingCard}>
             <ActivityIndicator size="large" color="#3B82F6" />
-            <Text style={styles.loadingText}>Analyzing Vehicle...</Text>
-            <Text style={styles.loadingSubtext}>AI processing in progress</Text>
+            <Text style={styles.loadingText}>Finding Your Car...</Text>
+            <Text style={styles.loadingSubtext}>Let's see what you spotted!</Text>
           </View>
         )}
 
@@ -431,7 +450,7 @@ export default function MotorDexCamera() {
               <View style={styles.vehicleHeader}>
                 <Ionicons name="car-sport" size={32} color="#3B82F6" />
                 <View style={styles.vehicleHeaderText}>
-                  <Text style={styles.vehicleStatus}>VEHICLE COLLECTED</Text>
+                  <Text style={styles.vehicleStatus}>NICE SPOT!</Text>
                 </View>
               </View>
               
@@ -462,24 +481,7 @@ export default function MotorDexCamera() {
           </View>
         )}
 
-        {/* Feature Highlights */}
-        <View style={styles.featuresSection}>
-          <Text style={styles.sectionTitle}>Why Choose MotorDex</Text>
-          <View style={styles.featuresList}>
-            <View style={styles.featureItem}>
-              <Ionicons name="flash" size={20} color="#F59E0B" />
-              <Text style={styles.featureText}>Instant Recognition</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <Ionicons name="shield-checkmark" size={20} color="#10B981" />
-              <Text style={styles.featureText}>99.9% Accuracy</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <Ionicons name="globe" size={20} color="#8B5CF6" />
-              <Text style={styles.featureText}>Global Database</Text>
-            </View>
-          </View>
-        </View>
+
 
       </ScrollView>
     </SafeAreaView>

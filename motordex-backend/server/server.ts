@@ -4,6 +4,9 @@ import axios from 'axios';
 import fs from 'fs';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import authRoutes from './authRoutes';
+import collectionRoutes from './collectionRoutes';
+import { optionalAuth } from './auth';
 
 // Import Express namespace for type declarations
 declare global {
@@ -37,6 +40,15 @@ app.use(cors());
 app.use(express.json());
 const API_KEY: string = process.env.GOOGLE_API_KEY || '';
 const VEHICLE_DB_API_KEY: string = process.env.VEHICLE_DB_API_KEY || '';
+
+// Check for additional environment variables needed for authentication
+if (!process.env.JWT_SECRET) {
+  console.warn('JWT_SECRET not set - using default (not recommended for production)');
+}
+
+if (!process.env.GOOGLE_CLIENT_ID) {
+  console.warn('GOOGLE_CLIENT_ID not set - Google OAuth will not work');
+}
 
 // Validate API keys
 if (!API_KEY) {
@@ -229,7 +241,13 @@ async function lookupVehicle(registrationNumber: string): Promise<VehicleData | 
   }
 }
 
-app.post('/upload', upload.single('image'), async (req: Request, res: Response): Promise<void> => {
+// Mount authentication routes
+app.use('/api/auth', authRoutes);
+
+// Mount collection routes
+app.use('/api', collectionRoutes);
+
+app.post('/upload', optionalAuth, upload.single('image'), async (req: Request, res: Response): Promise<void> => {
   try {
     const multerReq = req as MulterRequest;
     const imagePath: string = multerReq.file.path;
@@ -435,7 +453,7 @@ app.post('/upload', upload.single('image'), async (req: Request, res: Response):
 });
 
 // Dedicated vehicle lookup endpoint
-app.post('/vehicle-lookup', async (req: Request, res: Response): Promise<void> => {
+app.post('/vehicle-lookup', optionalAuth, async (req: Request, res: Response): Promise<void> => {
   try {
     const { registrationNumber } = req.body;
     
@@ -470,5 +488,11 @@ app.listen(3000, (): void => {
   console.log('Available endpoints:');
   console.log('  POST /upload - Upload image for license plate detection');
   console.log('  POST /vehicle-lookup - Direct vehicle lookup');
+  console.log('  POST /api/auth/register - User registration');
+  console.log('  POST /api/auth/login - User login');
+  console.log('  POST /api/auth/google - Google OAuth login');
+  console.log('  GET /api/auth/profile - Get user profile (requires auth)');
+  console.log('  PUT /api/auth/profile - Update user profile (requires auth)');
   console.log('  Vehicle Databases API: Ready');
+  console.log('  Authentication System: Ready');
 });

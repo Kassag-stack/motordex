@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import AuthService from '../services/authService';
 
 interface CollectedVehicle {
   id: string;
@@ -38,6 +39,17 @@ export default function VehicleCollection({ onBack }: VehicleCollectionProps) {
   useEffect(() => {
     loadCollection();
   }, []);
+
+  const getUserCollectionKey = (): string => {
+    const currentUser = AuthService.getInstance().getCurrentUser();
+    if (!currentUser) {
+      // Fallback for non-authenticated users (shouldn't happen in normal flow)
+      return 'vehicleCollection_anonymous';
+    }
+    return `vehicleCollection_${currentUser.id}`;
+  };
+
+
 
   useEffect(() => {
     // Extract unique makes for filtering
@@ -65,11 +77,16 @@ export default function VehicleCollection({ onBack }: VehicleCollectionProps) {
 
   const loadCollection = async () => {
     try {
-      const storedCollection = await AsyncStorage.getItem('vehicleCollection');
+      const collectionKey = getUserCollectionKey();
+      const storedCollection = await AsyncStorage.getItem(collectionKey);
       if (storedCollection) {
         const parsed = JSON.parse(storedCollection);
         setCollection(parsed);
         setFilteredCollection(parsed);
+      } else {
+        // New user starts with empty collection
+        setCollection([]);
+        setFilteredCollection([]);
       }
     } catch (error) {
       console.error('Error loading collection:', error);
@@ -87,7 +104,8 @@ export default function VehicleCollection({ onBack }: VehicleCollectionProps) {
           style: 'destructive',
           onPress: async () => {
             try {
-              await AsyncStorage.removeItem('vehicleCollection');
+              const collectionKey = getUserCollectionKey();
+              await AsyncStorage.removeItem(collectionKey);
               setCollection([]);
               setFilteredCollection([]);
               setSelectedMake(null);

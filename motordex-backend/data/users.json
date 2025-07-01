@@ -1,0 +1,51 @@
+[
+  {
+    "id": "018d0bab-5908-4c1e-bb71-2b6517e7dd49",
+    "createdAt": "2025-07-01T15:41:47.352Z",
+    "email": "dleiveroogiet@gmail.com",
+    "name": "Test test",
+    "password": "$2a$12$oHesWfXqsmAQ9LqKbcVVyuYlFEtjdqHBp8CtkWYqVG119uvCqragm"
+  },
+  {
+    "id": "5385de71-add4-4939-8a00-d2683564cd50",
+    "createdAt": "2025-07-01T15:43:51.974Z",
+    "email": "bestsquadinfortnite@gmail.com",
+    "name": "test2",
+    "password": "$2a$12$Kg5YxZYCT1G9t4PQ2Vdc4ejFCxhMywg8T7j8OlizJaIIp47RmhNXO"
+  },
+  {
+    "id": "fefdd4eb-8364-4812-b1db-ad7550a1c3d2",
+    "createdAt": "2025-07-01T15:54:47.986Z",
+    "email": "test@gmail.com",
+    "name": "test",
+    "password": "$2a$12$hhmzXRH32XpQGvrgaTLiKOO/hz8XuylI2hQmcMt0MtSGMw1IpM1i6"
+  },
+  {
+    "id": "3accd229-38cc-4633-802a-d33b5746d9c4",
+    "createdAt": "2025-07-01T15:57:00.237Z",
+    "email": "test2@gmail.com",
+    "name": "test2",
+    "password": "$2a$12$Vj.qYl1pu1AemqvvSP28zObbyj9Psfmz3bbYH16n/gqWilVmoHDzC"
+  },
+  {
+    "id": "6996e79f-a927-4453-ba8e-ecbec3d28861",
+    "createdAt": "2025-07-01T16:15:14.058Z",
+    "email": "test3@gmail.com",
+    "name": "test",
+    "password": "$2a$12$6M2NumWp1nLhkaKXOBpmFuMAX8WKPUDqLzD/Gi2GWWAR4vK/uufga"
+  },
+  {
+    "id": "f609049a-0d70-4691-8166-b04568273e0c",
+    "createdAt": "2025-07-01T16:16:08.011Z",
+    "email": "test4@gmail.com",
+    "name": "test",
+    "password": "$2a$12$iEbQrhZ7FKFIeS9I7wPIpu3l5tdD2AZN/S/wm8eOcjw3HqUMRfes2"
+  },
+  {
+    "id": "01874ee3-49ef-4e02-9225-0afc90b9b30b",
+    "createdAt": "2025-07-01T16:20:48.204Z",
+    "email": "test5@gmail.com",
+    "name": "test",
+    "password": "$2a$12$z8YPilkYNehawbFzkfYDue.KOyEZ0tKjZ4SELECVwbN2YPpvVRk5q"
+  }
+]
