@@ -6,7 +6,8 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import authRoutes from './authRoutes';
 import collectionRoutes from './collectionRoutes';
-import { optionalAuth } from './auth';
+import friendRoutes from './friendRoutes';
+import { optionalAuth, CollectionDB } from './auth';
 
 // Import Express namespace for type declarations
 declare global {
@@ -247,6 +248,9 @@ app.use('/api/auth', authRoutes);
 // Mount collection routes
 app.use('/api', collectionRoutes);
 
+// Mount friend routes
+app.use('/api', friendRoutes);
+
 app.post('/upload', optionalAuth, upload.single('image'), async (req: Request, res: Response): Promise<void> => {
   try {
     const multerReq = req as MulterRequest;
@@ -404,8 +408,52 @@ app.post('/upload', optionalAuth, upload.single('image'), async (req: Request, r
       
       // Lookup vehicle details for the first detected plate
       let vehicleData = null;
+      let addedToCollection = false;
+      let collectionMessage = '';
+      
       if (detectedPlates.length > 0) {
         vehicleData = await lookupVehicle(detectedPlates[0]);
+        
+        // If vehicle found and user is authenticated, add to collection
+        if (vehicleData && req.user) {
+          try {
+            // Check if vehicle already exists in collection
+            const existingVehicles = CollectionDB.getUserCollection(req.user.id);
+            const fullModel = `${vehicleData.make} ${vehicleData.model}`.toLowerCase();
+            const isDuplicate = existingVehicles.some(vehicle => vehicle.fullModel === fullModel);
+            
+            if (!isDuplicate) {
+              // Create file path for the uploaded image
+              const multerReq = req as MulterRequest;
+              const fileName = multerReq.file.filename;
+              const imageUri = `/uploads/${fileName}`;
+              
+              // Add vehicle to collection
+              const vehicleToAdd = {
+                id: Date.now().toString(),
+                make: vehicleData.make,
+                model: vehicleData.model,
+                imageUri: imageUri,
+                dateSpotted: new Date().toISOString(),
+                fullModel: fullModel,
+                registrationNumber: vehicleData.registrationNumber,
+                vehicleYear: vehicleData.year,
+                color: vehicleData.color
+              };
+              
+              CollectionDB.addVehicleToCollection(req.user.id, vehicleToAdd);
+              addedToCollection = true;
+              collectionMessage = ` Added to your collection!`;
+              console.log(`Vehicle ${vehicleData.make} ${vehicleData.model} added to user ${req.user.id}'s collection`);
+            } else {
+              collectionMessage = ` (Already in your collection)`;
+              console.log(`Vehicle ${vehicleData.make} ${vehicleData.model} already exists in user ${req.user.id}'s collection`);
+            }
+          } catch (collectionError) {
+            console.error('Error adding vehicle to collection:', collectionError);
+            collectionMessage = ` (Error adding to collection)`;
+          }
+        }
       }
       
       res.json({ 
@@ -415,8 +463,9 @@ app.post('/upload', optionalAuth, upload.single('image'), async (req: Request, r
         allText: allText,
         licensePlates: detectedPlates,
         vehicleData: vehicleData,
+        addedToCollection: addedToCollection,
         message: vehicleData 
-          ? `License plate detected: ${detectedPlates[0]} - Vehicle found!`
+          ? `License plate detected: ${detectedPlates[0]} - Vehicle found!${collectionMessage}`
           : `License plate(s) detected: ${detectedPlates.join(', ')} - Vehicle not found in database`
       });
       return;
@@ -465,10 +514,50 @@ app.post('/vehicle-lookup', optionalAuth, async (req: Request, res: Response): P
     const vehicleData = await lookupVehicle(registrationNumber);
     
     if (vehicleData) {
+      let addedToCollection = false;
+      let collectionMessage = '';
+      
+      // If user is authenticated, add to collection
+      if (req.user) {
+        try {
+          // Check if vehicle already exists in collection
+          const existingVehicles = CollectionDB.getUserCollection(req.user.id);
+          const fullModel = `${vehicleData.make} ${vehicleData.model}`.toLowerCase();
+          const isDuplicate = existingVehicles.some(vehicle => vehicle.fullModel === fullModel);
+          
+          if (!isDuplicate) {
+            // Add vehicle to collection (without image since this is manual lookup)
+            const vehicleToAdd = {
+              id: Date.now().toString(),
+              make: vehicleData.make,
+              model: vehicleData.model,
+              imageUri: '', // No image for manual lookup
+              dateSpotted: new Date().toISOString(),
+              fullModel: fullModel,
+              registrationNumber: vehicleData.registrationNumber,
+              vehicleYear: vehicleData.year,
+              color: vehicleData.color
+            };
+            
+            CollectionDB.addVehicleToCollection(req.user.id, vehicleToAdd);
+            addedToCollection = true;
+            collectionMessage = ' Added to your collection!';
+            console.log(`Vehicle ${vehicleData.make} ${vehicleData.model} added to user ${req.user.id}'s collection via manual lookup`);
+          } else {
+            collectionMessage = ' (Already in your collection)';
+            console.log(`Vehicle ${vehicleData.make} ${vehicleData.model} already exists in user ${req.user.id}'s collection`);
+          }
+        } catch (collectionError) {
+          console.error('Error adding vehicle to collection:', collectionError);
+          collectionMessage = ' (Error adding to collection)';
+        }
+      }
+      
       res.json({
         success: true,
         vehicleData: vehicleData,
-        message: `Vehicle details found for ${registrationNumber}`
+        addedToCollection: addedToCollection,
+        message: `Vehicle details found for ${registrationNumber}${collectionMessage}`
       });
     } else {
       res.status(404).json({

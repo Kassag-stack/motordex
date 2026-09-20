@@ -2,9 +2,8 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { Request, Response, NextFunction } from 'express';
 import { OAuth2Client } from 'google-auth-library';
-import fs from 'fs';
-import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { db } from './database';
 
 // User interface
 export interface User {
@@ -37,6 +36,31 @@ export interface UserCollection {
   lastUpdated: string;
 }
 
+// Friend system interfaces
+export interface FriendRequest {
+  id: string;
+  fromUserId: string;
+  toUserId: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Friendship {
+  id: string;
+  user1Id: string;
+  user2Id: string;
+  createdAt: string;
+}
+
+export interface PublicUser {
+  id: string;
+  email: string;
+  name: string;
+  profilePicture?: string;
+  createdAt: string;
+}
+
 // JWT payload interface
 export interface JWTPayload {
   userId: string;
@@ -58,75 +82,80 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 // Initialize Google OAuth client
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
-// Simple file-based user storage (in production, use a proper database)
-const USERS_FILE = path.join(__dirname, '../data/users.json');
+// User database operations (SQLite-backed)
+const userSelect = 'SELECT id, email, name, password, googleId, profilePicture, createdAt FROM users';
 
-// Ensure data directory exists
-const dataDir = path.join(__dirname, '../data');
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+// SQLite stores absent optional fields as NULL; the API contract uses undefined.
+function rowToUser(row: any): User | undefined {
+  if (!row) return undefined;
+  const user: User = {
+    id: row.id,
+    email: row.email,
+    name: row.name,
+    createdAt: row.createdAt
+  };
+  if (row.password !== null) user.password = row.password;
+  if (row.googleId !== null) user.googleId = row.googleId;
+  if (row.profilePicture !== null) user.profilePicture = row.profilePicture;
+  return user;
 }
 
-// Initialize users file if it doesn't exist
-if (!fs.existsSync(USERS_FILE)) {
-  fs.writeFileSync(USERS_FILE, JSON.stringify([]));
-}
-
-// User database operations
 class UserDB {
   static getUsers(): User[] {
-    try {
-      const data = fs.readFileSync(USERS_FILE, 'utf8');
-      return JSON.parse(data);
-    } catch (error) {
-      console.error('Error reading users file:', error);
-      return [];
-    }
-  }
-
-  static saveUsers(users: User[]): void {
-    try {
-      fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-    } catch (error) {
-      console.error('Error saving users file:', error);
-    }
+    const rows = db.prepare(`${userSelect} ORDER BY createdAt`).all();
+    return rows.map(row => rowToUser(row)!);
   }
 
   static findUserByEmail(email: string): User | undefined {
-    const users = this.getUsers();
-    return users.find(user => user.email.toLowerCase() === email.toLowerCase());
+    // The email column is COLLATE NOCASE, so this match is case-insensitive.
+    return rowToUser(db.prepare(`${userSelect} WHERE email = ?`).get(email));
   }
 
   static findUserById(id: string): User | undefined {
-    const users = this.getUsers();
-    return users.find(user => user.id === id);
+    return rowToUser(db.prepare(`${userSelect} WHERE id = ?`).get(id));
   }
 
   static findUserByGoogleId(googleId: string): User | undefined {
-    const users = this.getUsers();
-    return users.find(user => user.googleId === googleId);
+    return rowToUser(db.prepare(`${userSelect} WHERE googleId = ?`).get(googleId));
   }
 
   static createUser(userData: Omit<User, 'id' | 'createdAt'>): User {
-    const users = this.getUsers();
     const newUser: User = {
       id: uuidv4(),
       createdAt: new Date().toISOString(),
       ...userData
     };
-    users.push(newUser);
-    this.saveUsers(users);
+
+    db.prepare(`
+      INSERT INTO users (id, email, name, password, googleId, profilePicture, createdAt)
+      VALUES (@id, @email, @name, @password, @googleId, @profilePicture, @createdAt)
+    `).run({
+      id: newUser.id,
+      email: newUser.email,
+      name: newUser.name,
+      password: newUser.password ?? null,
+      googleId: newUser.googleId ?? null,
+      profilePicture: newUser.profilePicture ?? null,
+      createdAt: newUser.createdAt
+    });
+
     return newUser;
   }
 
   static updateUser(id: string, updateData: Partial<User>): User | undefined {
-    const users = this.getUsers();
-    const userIndex = users.findIndex(user => user.id === id);
-    if (userIndex === -1) return undefined;
+    const existing = this.findUserById(id);
+    if (!existing) return undefined;
 
-    users[userIndex] = { ...users[userIndex], ...updateData };
-    this.saveUsers(users);
-    return users[userIndex];
+    const updatable = ['email', 'name', 'password', 'googleId', 'profilePicture'] as const;
+    const fields = updatable.filter(field => field in updateData);
+    if (fields.length === 0) return existing;
+
+    const assignments = fields.map(field => `${field} = @${field}`).join(', ');
+    const params: Record<string, unknown> = { id };
+    for (const field of fields) params[field] = updateData[field] ?? null;
+
+    db.prepare(`UPDATE users SET ${assignments} WHERE id = @id`).run(params);
+    return this.findUserById(id);
   }
 }
 
@@ -210,76 +239,111 @@ export const optionalAuth = (req: Request, res: Response, next: NextFunction): v
   next();
 };
 
-// Collection file path
-const COLLECTIONS_FILE = path.join(__dirname, '../data/collections.json');
+// Collection database operations (SQLite-backed)
+const vehicleSelect = `
+  SELECT id, userId, make, model, imageUri, dateSpotted, fullModel,
+         registrationNumber, vehicleYear, color
+  FROM vehicles
+`;
 
-// Initialize collections file if it doesn't exist
-if (!fs.existsSync(COLLECTIONS_FILE)) {
-  fs.writeFileSync(COLLECTIONS_FILE, JSON.stringify({}));
+function rowToVehicle(row: any): CollectedVehicle {
+  const vehicle: CollectedVehicle = {
+    id: row.id,
+    userId: row.userId,
+    make: row.make,
+    model: row.model,
+    imageUri: row.imageUri,
+    dateSpotted: row.dateSpotted,
+    fullModel: row.fullModel
+  };
+  if (row.registrationNumber !== null) vehicle.registrationNumber = row.registrationNumber;
+  if (row.vehicleYear !== null) vehicle.vehicleYear = row.vehicleYear;
+  if (row.color !== null) vehicle.color = row.color;
+  return vehicle;
 }
 
-// Collection database operations
+const insertVehicleSQL = `
+  INSERT INTO vehicles
+    (id, userId, make, model, imageUri, dateSpotted, fullModel, registrationNumber, vehicleYear, color)
+  VALUES
+    (@id, @userId, @make, @model, @imageUri, @dateSpotted, @fullModel, @registrationNumber, @vehicleYear, @color)
+`;
+
+function vehicleParams(userId: string, vehicle: Omit<CollectedVehicle, 'userId'>) {
+  return {
+    id: String(vehicle.id),
+    userId,
+    make: vehicle.make,
+    model: vehicle.model,
+    imageUri: vehicle.imageUri,
+    dateSpotted: vehicle.dateSpotted,
+    fullModel: vehicle.fullModel,
+    registrationNumber: vehicle.registrationNumber ?? null,
+    vehicleYear: vehicle.vehicleYear ?? null,
+    color: vehicle.color ?? null
+  };
+}
+
+function touchCollection(userId: string, timestamp = new Date().toISOString()): void {
+  db.prepare(`
+    INSERT INTO collections (userId, lastUpdated) VALUES (?, ?)
+    ON CONFLICT(userId) DO UPDATE SET lastUpdated = excluded.lastUpdated
+  `).run(userId, timestamp);
+}
+
 class CollectionDB {
   static getCollections(): Record<string, UserCollection> {
-    try {
-      const data = fs.readFileSync(COLLECTIONS_FILE, 'utf8');
-      return JSON.parse(data);
-    } catch (error) {
-      console.error('Error reading collections file:', error);
-      return {};
+    const rows = db.prepare('SELECT userId, lastUpdated FROM collections').all() as any[];
+    const collections: Record<string, UserCollection> = {};
+    for (const row of rows) {
+      collections[row.userId] = {
+        userId: row.userId,
+        vehicles: this.getUserCollection(row.userId),
+        lastUpdated: row.lastUpdated
+      };
     }
-  }
-
-  static saveCollections(collections: Record<string, UserCollection>): void {
-    try {
-      fs.writeFileSync(COLLECTIONS_FILE, JSON.stringify(collections, null, 2));
-    } catch (error) {
-      console.error('Error saving collections file:', error);
-    }
+    return collections;
   }
 
   static getUserCollection(userId: string): CollectedVehicle[] {
-    const collections = this.getCollections();
-    return collections[userId]?.vehicles || [];
+    const rows = db.prepare(`${vehicleSelect} WHERE userId = ? ORDER BY rowid`).all(userId) as any[];
+    return rows.map(rowToVehicle);
   }
 
   static updateUserCollection(userId: string, vehicles: CollectedVehicle[]): void {
-    const collections = this.getCollections();
-    collections[userId] = {
-      userId,
-      vehicles,
-      lastUpdated: new Date().toISOString()
-    };
-    this.saveCollections(collections);
+    const insert = db.prepare(insertVehicleSQL);
+
+    db.transaction(() => {
+      db.prepare('DELETE FROM vehicles WHERE userId = ?').run(userId);
+      for (const vehicle of vehicles) {
+        insert.run(vehicleParams(userId, vehicle));
+      }
+      touchCollection(userId);
+    })();
   }
 
   static addVehicleToCollection(userId: string, vehicle: Omit<CollectedVehicle, 'userId'>): CollectedVehicle {
-    const collections = this.getCollections();
-    const userCollection = collections[userId]?.vehicles || [];
-    
     const newVehicle: CollectedVehicle = {
       ...vehicle,
       userId,
       id: vehicle.id || Date.now().toString()
     };
-    
-    userCollection.push(newVehicle);
-    this.updateUserCollection(userId, userCollection);
-    
+
+    db.transaction(() => {
+      db.prepare(insertVehicleSQL).run(vehicleParams(userId, newVehicle));
+      touchCollection(userId);
+    })();
+
     return newVehicle;
   }
 
   static removeVehicleFromCollection(userId: string, vehicleId: string): boolean {
-    const collections = this.getCollections();
-    const userCollection = collections[userId]?.vehicles || [];
-    
-    const vehicleIndex = userCollection.findIndex(v => v.id === vehicleId);
-    if (vehicleIndex === -1) return false;
-    
-    userCollection.splice(vehicleIndex, 1);
-    this.updateUserCollection(userId, userCollection);
-    
-    return true;
+    return db.transaction(() => {
+      const result = db.prepare('DELETE FROM vehicles WHERE userId = ? AND id = ?').run(userId, vehicleId);
+      if (result.changes === 0) return false;
+      touchCollection(userId);
+      return true;
+    })();
   }
 
   static clearUserCollection(userId: string): void {
@@ -287,22 +351,143 @@ class CollectionDB {
   }
 
   static getCollectionStats(userId: string): { totalVehicles: number; uniqueMakes: number; lastUpdated?: string } {
-    const collections = this.getCollections();
-    const userCollection = collections[userId];
-    
-    if (!userCollection) {
+    const collection = db.prepare('SELECT lastUpdated FROM collections WHERE userId = ?').get(userId) as any;
+    if (!collection) {
       return { totalVehicles: 0, uniqueMakes: 0 };
     }
-    
-    const vehicles = userCollection.vehicles;
-    const uniqueMakes = new Set(vehicles.map(v => v.make)).size;
-    
+
+    const counts = db.prepare(`
+      SELECT COUNT(*) AS totalVehicles, COUNT(DISTINCT make) AS uniqueMakes
+      FROM vehicles WHERE userId = ?
+    `).get(userId) as { totalVehicles: number; uniqueMakes: number };
+
     return {
-      totalVehicles: vehicles.length,
-      uniqueMakes,
-      lastUpdated: userCollection.lastUpdated
+      totalVehicles: counts.totalVehicles,
+      uniqueMakes: counts.uniqueMakes,
+      lastUpdated: collection.lastUpdated
     };
   }
 }
 
-export { UserDB, CollectionDB }; 
+// Friend database operations (SQLite-backed)
+const friendshipSelect = 'SELECT id, user1Id, user2Id, createdAt FROM friendships';
+const requestSelect = 'SELECT id, fromUserId, toUserId, status, createdAt, updatedAt FROM friend_requests';
+
+class FriendDB {
+  static getFriendships(): Friendship[] {
+    return db.prepare(`${friendshipSelect} ORDER BY createdAt`).all() as Friendship[];
+  }
+
+  static getFriendRequests(): FriendRequest[] {
+    return db.prepare(`${requestSelect} ORDER BY createdAt`).all() as FriendRequest[];
+  }
+
+  static createFriendRequest(fromUserId: string, toUserId: string): FriendRequest {
+    const existingRequest = db.prepare(`
+      ${requestSelect}
+      WHERE (fromUserId = @from AND toUserId = @to) OR (fromUserId = @to AND toUserId = @from)
+    `).get({ from: fromUserId, to: toUserId });
+
+    if (existingRequest) {
+      throw new Error('Friend request already exists');
+    }
+
+    const now = new Date().toISOString();
+    const newRequest: FriendRequest = {
+      id: uuidv4(),
+      fromUserId,
+      toUserId,
+      status: 'pending',
+      createdAt: now,
+      updatedAt: now
+    };
+
+    db.prepare(`
+      INSERT INTO friend_requests (id, fromUserId, toUserId, status, createdAt, updatedAt)
+      VALUES (@id, @fromUserId, @toUserId, @status, @createdAt, @updatedAt)
+    `).run(newRequest);
+
+    return newRequest;
+  }
+
+  static acceptFriendRequest(requestId: string): Friendship | null {
+    return db.transaction(() => {
+      const request = db.prepare(`${requestSelect} WHERE id = ?`).get(requestId) as FriendRequest | undefined;
+      if (!request) return null;
+
+      const now = new Date().toISOString();
+      db.prepare('UPDATE friend_requests SET status = ?, updatedAt = ? WHERE id = ?')
+        .run('accepted', now, requestId);
+
+      const friendship: Friendship = {
+        id: uuidv4(),
+        user1Id: request.fromUserId,
+        user2Id: request.toUserId,
+        createdAt: now
+      };
+
+      db.prepare(`
+        INSERT INTO friendships (id, user1Id, user2Id, createdAt)
+        VALUES (@id, @user1Id, @user2Id, @createdAt)
+      `).run(friendship);
+
+      return friendship;
+    })();
+  }
+
+  static rejectFriendRequest(requestId: string): boolean {
+    const result = db.prepare('UPDATE friend_requests SET status = ?, updatedAt = ? WHERE id = ?')
+      .run('rejected', new Date().toISOString(), requestId);
+    return result.changes > 0;
+  }
+
+  static getUserFriends(userId: string): string[] {
+    const rows = db.prepare(`
+      SELECT CASE WHEN user1Id = @userId THEN user2Id ELSE user1Id END AS friendId
+      FROM friendships
+      WHERE user1Id = @userId OR user2Id = @userId
+      ORDER BY createdAt
+    `).all({ userId }) as { friendId: string }[];
+    return rows.map(row => row.friendId);
+  }
+
+  static areFriends(userId1: string, userId2: string): boolean {
+    const row = db.prepare(`
+      SELECT 1 FROM friendships
+      WHERE (user1Id = @a AND user2Id = @b) OR (user1Id = @b AND user2Id = @a)
+      LIMIT 1
+    `).get({ a: userId1, b: userId2 });
+    return row !== undefined;
+  }
+
+  static removeFriendship(userId1: string, userId2: string): boolean {
+    return db.transaction(() => {
+      const result = db.prepare(`
+        DELETE FROM friendships
+        WHERE (user1Id = @a AND user2Id = @b) OR (user1Id = @b AND user2Id = @a)
+      `).run({ a: userId1, b: userId2 });
+
+      if (result.changes === 0) return false;
+
+      // Drop any request between the pair so they can befriend each other again later.
+      db.prepare(`
+        DELETE FROM friend_requests
+        WHERE (fromUserId = @a AND toUserId = @b) OR (fromUserId = @b AND toUserId = @a)
+      `).run({ a: userId1, b: userId2 });
+
+      return true;
+    })();
+  }
+
+  static getPendingRequests(userId: string): FriendRequest[] {
+    return db.prepare(`${requestSelect} WHERE toUserId = ? AND status = 'pending' ORDER BY createdAt`)
+      .all(userId) as FriendRequest[];
+  }
+
+  static getSentRequests(userId: string): FriendRequest[] {
+    return db.prepare(`${requestSelect} WHERE fromUserId = ? AND status = 'pending' ORDER BY createdAt`)
+      .all(userId) as FriendRequest[];
+  }
+}
+
+export { UserDB, CollectionDB, FriendDB };

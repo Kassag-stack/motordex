@@ -1,0 +1,42 @@
+[
+  {
+    "id": "d631e314-6732-4588-aa26-9da4a70d62c5",
+    "fromUserId": "a8e1bad7-0ab0-4284-b858-6e89b39a77c6",
+    "toUserId": "86a292d4-8266-47a3-ba45-3f993ab34a35",
+    "status": "accepted",
+    "createdAt": "2025-07-01T16:54:25.985Z",
+    "updatedAt": "2025-07-01T16:54:57.500Z"
+  },
+  {
+    "id": "f006e7d1-4043-4c8c-8afb-c38e885298cc",
+    "fromUserId": "01874ee3-49ef-4e02-9225-0afc90b9b30b",
+    "toUserId": "018d0bab-5908-4c1e-bb71-2b6517e7dd49",
+    "status": "accepted",
+    "createdAt": "2025-07-01T17:07:38.853Z",
+    "updatedAt": "2025-07-01T17:08:27.352Z"
+  },
+  {
+    "id": "d4d1bc25-4eff-44c2-9343-7f608f7d211d",
+    "fromUserId": "fefdd4eb-8364-4812-b1db-ad7550a1c3d2",
+    "toUserId": "018d0bab-5908-4c1e-bb71-2b6517e7dd49",
+    "status": "accepted",
+    "createdAt": "2025-07-01T17:18:47.695Z",
+    "updatedAt": "2025-07-01T17:19:23.667Z"
+  },
+  {
+    "id": "ac0a5fbd-d730-4fa6-a958-1b978b068d0b",
+    "fromUserId": "f609049a-0d70-4691-8166-b04568273e0c",
+    "toUserId": "01874ee3-49ef-4e02-9225-0afc90b9b30b",
+    "status": "accepted",
+    "createdAt": "2025-07-01T17:24:35.017Z",
+    "updatedAt": "2025-07-01T17:24:58.493Z"
+  },
+  {
+    "id": "618fece1-563b-4643-8434-2e35ac163c56",
+    "fromUserId": "2aa3591e-0b69-4cff-b778-8afa4f5be5f0",
+    "toUserId": "228871a5-cbba-44c8-89a5-4786085c445b",
+    "status": "accepted",
+    "createdAt": "2025-07-01T17:38:56.497Z",
+    "updatedAt": "2025-07-01T17:39:47.145Z"
+  }
+]

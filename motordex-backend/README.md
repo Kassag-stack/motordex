@@ -10,6 +10,7 @@ A Node.js backend service that detects UK license plates from images and looks u
 - 📋 **Vehicle Data Lookup**: Comprehensive vehicle information including make, model, year, MOT, tax status, and performance data
 - 🛡️ **Error Handling**: Comprehensive error handling and validation
 - ⚡ **Fast Response**: Optimized for quick license plate detection and lookup
+- 🗄️ **SQLite Storage**: Users, collections, and friends persisted in `data/motordex.db`
 
 ## Prerequisites
 
@@ -135,6 +136,48 @@ The Vehicle Databases API provides comprehensive vehicle information:
 - **Performance**: Power (BHP/kW), maximum speed
 - **Fuel Economy**: Combined, extra-urban, and urban MPG
 - **Emissions**: CO2 emissions and VED band
+
+## Database
+
+Users, collections, friendships, and friend requests are stored in a SQLite
+database at `data/motordex.db`, accessed through [better-sqlite3](https://github.com/WiseLibs/better-sqlite3).
+
+The schema and connection live in [`server/database.ts`](server/database.ts);
+the `UserDB`, `CollectionDB`, and `FriendDB` classes in
+[`server/auth.ts`](server/auth.ts) wrap all the queries.
+
+### Tables
+
+| Table | Contents |
+| --- | --- |
+| `users` | Accounts (email/password and Google). `email` is `UNIQUE COLLATE NOCASE`, `googleId` is `UNIQUE`. |
+| `vehicles` | Spotted vehicles, keyed by `(userId, id)` so two users can hold the same vehicle id. |
+| `collections` | One row per user tracking `lastUpdated` for their collection. |
+| `friendships` | Accepted friendships between two users. |
+| `friend_requests` | Pending/accepted/rejected requests. |
+
+Rows in `vehicles`, `collections`, `friendships`, and `friend_requests` are
+declared `ON DELETE CASCADE` against `users`, and foreign keys are enforced.
+
+### Migrating from the old JSON files
+
+The database file is created automatically on first run. If it is empty and the
+legacy `data/users.json`, `data/collections.json`, `data/friends.json`, and
+`data/friendRequests.json` files are present, their contents are imported in a
+single transaction and the counts are logged:
+
+```
+Migrated JSON data into SQLite: { users: 11, vehicles: 12, friendships: 5, friendRequests: 5 }
+```
+
+The import runs only while the `users` table is empty, so restarting the server
+never duplicates rows, and later writes go to SQLite only. The JSON files are
+left untouched and can be kept as a backup or deleted once you are satisfied
+with the migration.
+
+To start over from the JSON files, delete `data/motordex.db` (plus the
+`-shm`/`-wal` files) and restart. Set `DB_FILE` in `.env` to put the database
+somewhere else.
 
 ## Data Sources
 

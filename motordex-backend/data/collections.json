@@ -1,1 +1,170 @@
-{}
+{
+  "a8e1bad7-0ab0-4284-b858-6e89b39a77c6": {
+    "userId": "a8e1bad7-0ab0-4284-b858-6e89b39a77c6",
+    "vehicles": [
+      {
+        "id": "1704116400000",
+        "userId": "a8e1bad7-0ab0-4284-b858-6e89b39a77c6",
+        "make": "BMW",
+        "model": "3 Series",
+        "imageUri": "/uploads/54533e9bdf78e5b1b6a35c4e3e7d008e",
+        "dateSpotted": "2025-01-01T12:00:00.000Z",
+        "fullModel": "bmw 3 series",
+        "registrationNumber": "AB12CDE",
+        "vehicleYear": "2018",
+        "color": "Blue"
+      },
+      {
+        "id": "1704202800000",
+        "userId": "a8e1bad7-0ab0-4284-b858-6e89b39a77c6",
+        "make": "Audi",
+        "model": "A4",
+        "imageUri": "/uploads/079721e017f9ca8577d2bc4c4c4d6196",
+        "dateSpotted": "2025-01-02T12:00:00.000Z",
+        "fullModel": "audi a4",
+        "registrationNumber": "EF34GHI",
+        "vehicleYear": "2020",
+        "color": "White"
+      },
+      {
+        "id": "1704289200000",
+        "userId": "a8e1bad7-0ab0-4284-b858-6e89b39a77c6",
+        "make": "Mercedes-Benz",
+        "model": "C-Class",
+        "imageUri": "/uploads/056677e0f74ed8be71598d36305d5be8",
+        "dateSpotted": "2025-01-03T12:00:00.000Z",
+        "fullModel": "mercedes-benz c-class",
+        "registrationNumber": "JK56LMN",
+        "vehicleYear": "2019",
+        "color": "Silver"
+      }
+    ],
+    "lastUpdated": "2025-01-03T12:00:00.000Z"
+  },
+  "86a292d4-8266-47a3-ba45-3f993ab34a35": {
+    "userId": "86a292d4-8266-47a3-ba45-3f993ab34a35",
+    "vehicles": [
+      {
+        "id": "1704375600000",
+        "userId": "86a292d4-8266-47a3-ba45-3f993ab34a35",
+        "make": "BMW",
+        "model": "3 Series",
+        "imageUri": "/uploads/3790c41f6a950b0a42fa298ed5d8ce39",
+        "dateSpotted": "2025-01-04T12:00:00.000Z",
+        "fullModel": "bmw 3 series",
+        "registrationNumber": "OP78QRS",
+        "vehicleYear": "2017",
+        "color": "Black"
+      },
+      {
+        "id": "1704462000000",
+        "userId": "86a292d4-8266-47a3-ba45-3f993ab34a35",
+        "make": "Volkswagen",
+        "model": "Golf",
+        "imageUri": "/uploads/b2c6e52632f22db5ea327c727656ee72",
+        "dateSpotted": "2025-01-05T12:00:00.000Z",
+        "fullModel": "volkswagen golf",
+        "registrationNumber": "TU90VWX",
+        "vehicleYear": "2021",
+        "color": "Red"
+      },
+      {
+        "id": "1704548400000",
+        "userId": "86a292d4-8266-47a3-ba45-3f993ab34a35",
+        "make": "Ford",
+        "model": "Focus",
+        "imageUri": "/uploads/b0e9e211fc70386ba1273ec9769d2800",
+        "dateSpotted": "2025-01-06T12:00:00.000Z",
+        "fullModel": "ford focus",
+        "registrationNumber": "YZ12ABC",
+        "vehicleYear": "2022",
+        "color": "Green"
+      },
+      {
+        "id": "1704634800000",
+        "userId": "86a292d4-8266-47a3-ba45-3f993ab34a35",
+        "make": "Toyota",
+        "model": "Camry",
+        "imageUri": "/uploads/de91a65f27299f88b603ad18a2347d85",
+        "dateSpotted": "2025-01-07T12:00:00.000Z",
+        "fullModel": "toyota camry",
+        "registrationNumber": "DE34FGH",
+        "vehicleYear": "2023",
+        "color": "Gray"
+      }
+    ],
+    "lastUpdated": "2025-01-07T12:00:00.000Z"
+  },
+  "2aa3591e-0b69-4cff-b778-8afa4f5be5f0": {
+    "userId": "2aa3591e-0b69-4cff-b778-8afa4f5be5f0",
+    "vehicles": [
+      {
+        "id": "1735747200000",
+        "userId": "2aa3591e-0b69-4cff-b778-8afa4f5be5f0",
+        "make": "Tesla",
+        "model": "Model 3",
+        "imageUri": "/uploads/54533e9bdf78e5b1b6a35c4e3e7d008e",
+        "dateSpotted": "2025-01-01T10:00:00.000Z",
+        "fullModel": "tesla model 3",
+        "registrationNumber": "EV21ABC",
+        "vehicleYear": "2023",
+        "color": "White"
+      },
+      {
+        "id": "1735833600000",
+        "userId": "2aa3591e-0b69-4cff-b778-8afa4f5be5f0",
+        "make": "Porsche",
+        "model": "911",
+        "imageUri": "/uploads/079721e017f9ca8577d2bc4c4c4d6196",
+        "dateSpotted": "2025-01-02T10:00:00.000Z",
+        "fullModel": "porsche 911",
+        "registrationNumber": "SP23DEF",
+        "vehicleYear": "2022",
+        "color": "Red"
+      }
+    ],
+    "lastUpdated": "2025-01-02T10:00:00.000Z"
+  },
+  "228871a5-cbba-44c8-89a5-4786085c445b": {
+    "userId": "228871a5-cbba-44c8-89a5-4786085c445b",
+    "vehicles": [
+      {
+        "id": "1735920000000",
+        "userId": "228871a5-cbba-44c8-89a5-4786085c445b",
+        "make": "Tesla",
+        "model": "Model S",
+        "imageUri": "/uploads/3790c41f6a950b0a42fa298ed5d8ce39",
+        "dateSpotted": "2025-01-03T10:00:00.000Z",
+        "fullModel": "tesla model s",
+        "registrationNumber": "EV24GHI",
+        "vehicleYear": "2024",
+        "color": "Black"
+      },
+      {
+        "id": "1736006400000",
+        "userId": "228871a5-cbba-44c8-89a5-4786085c445b",
+        "make": "Lamborghini",
+        "model": "Huracan",
+        "imageUri": "/uploads/b2c6e52632f22db5ea327c727656ee72",
+        "dateSpotted": "2025-01-04T10:00:00.000Z",
+        "fullModel": "lamborghini huracan",
+        "registrationNumber": "LB25JKL",
+        "vehicleYear": "2025",
+        "color": "Yellow"
+      },
+      {
+        "id": "1736092800000",
+        "userId": "228871a5-cbba-44c8-89a5-4786085c445b",
+        "make": "Ferrari",
+        "model": "F8 Tributo",
+        "imageUri": "/uploads/b0e9e211fc70386ba1273ec9769d2800",
+        "dateSpotted": "2025-01-05T10:00:00.000Z",
+        "fullModel": "ferrari f8 tributo",
+        "registrationNumber": "FR26MNO",
+        "vehicleYear": "2024",
+        "color": "Red"
+      }
+    ],
+    "lastUpdated": "2025-01-05T10:00:00.000Z"
+  }
+}

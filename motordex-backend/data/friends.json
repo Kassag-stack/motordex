@@ -1,0 +1,32 @@
+[
+  {
+    "id": "67d3d69d-0496-4b69-8a79-7367e6103471",
+    "user1Id": "a8e1bad7-0ab0-4284-b858-6e89b39a77c6",
+    "user2Id": "86a292d4-8266-47a3-ba45-3f993ab34a35",
+    "createdAt": "2025-07-01T16:54:57.500Z"
+  },
+  {
+    "id": "d336ae6f-2610-43c9-9dac-b0fb9c83d556",
+    "user1Id": "01874ee3-49ef-4e02-9225-0afc90b9b30b",
+    "user2Id": "018d0bab-5908-4c1e-bb71-2b6517e7dd49",
+    "createdAt": "2025-07-01T17:08:27.352Z"
+  },
+  {
+    "id": "308cc5f6-fb4c-481a-94ce-a02fec984f7d",
+    "user1Id": "fefdd4eb-8364-4812-b1db-ad7550a1c3d2",
+    "user2Id": "018d0bab-5908-4c1e-bb71-2b6517e7dd49",
+    "createdAt": "2025-07-01T17:19:23.667Z"
+  },
+  {
+    "id": "e3ce4e54-3c39-41e3-981a-507efd7ae435",
+    "user1Id": "f609049a-0d70-4691-8166-b04568273e0c",
+    "user2Id": "01874ee3-49ef-4e02-9225-0afc90b9b30b",
+    "createdAt": "2025-07-01T17:24:58.493Z"
+  },
+  {
+    "id": "38f51093-ebee-465b-be05-bddd35e1af7c",
+    "user1Id": "2aa3591e-0b69-4cff-b778-8afa4f5be5f0",
+    "user2Id": "228871a5-cbba-44c8-89a5-4786085c445b",
+    "createdAt": "2025-07-01T17:39:47.145Z"
+  }
+]
